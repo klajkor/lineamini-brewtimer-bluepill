@@ -9,17 +9,12 @@
 *
 * Extension modules and hw used:
 *  - SSD1306 OLED display, I2C - optional, please see source code for feature switch (SSD1306_ENABLED)
-*  - MAX7219 LED matrix display, I2C - optional, please see source code for feature switch (MAX7219_ENABLED)
-*  - 5x7 dot matrix displaying 3x5 digits (controlled by MAX7219)
-*  - Holtek HT16K33 LED matrix display, I2C - optional, please see source code for feature switch (HT16K33_ENABLED)
 *  - ILI9340 TFT display, SPI and 8 bit data - optional, please see source code for feature switch (ILI9340_ENABLED)
 *  - reed switch, sensing magnet valve sc
 *  - INA219, I2C
 * Libraries used:
 *  - SSD1306Ascii by Bill Greiman - Copyright (c) 2019, Bill Greiman
-*  - LedControl by wayoda - Copyright (c) 2012, Eberhard Fahle
 *  - Adafruit INA219 by Adafruit - Copyright (c) 2012, Adafruit Industries
-*  - HT16K33 - Copyright (c) 2017, lpaseen, Peter Sjoberg <peters-alib AT techwiz.ca>
 *  - MCUFRIEND_kbv - Copyright (c) 2020, David Prentice
 *
 * BSD license, all text here must be included in any redistribution.
@@ -39,6 +34,7 @@
 // Adafruit BusIO library also needs to be installed on PlatformIO!
 
 #include <Arduino.h>
+#include <math.h>
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_INA219.h>
@@ -52,7 +48,35 @@
   #define OLED_I2C_ADDR 0x3C /* OLED module I2C address */
   #define OLED_WIDTH 128
   #define OLED_HEIGHT 32
-#endif
+#endif // #ifdef SSD1306_ENABLED
+
+#ifdef ILI9340_ENABLED
+  //#define USE_MY_BLUEPILL
+  #include <MCUFRIEND_kbv.h> // for ILI9340
+  #include <mcufriend_special.h>
+  #include <Fonts/FreeSans12pt7b.h>
+  //Constants for ILI9340 display
+  #define LCD_CS A3 // Chip Select goes to Analog 3
+  #define LCD_CD A2 // Command/Data goes to Analog 2
+  #define LCD_WR A1 // LCD Write goes to Analog 1
+  #define LCD_RD A0 // LCD Read goes to Analog 0
+  #define LCD_RESET A4 // Can alternately just connect to Arduino's reset pin
+  // Assign human-readable names to some common 16-bit color values:
+  #define	BLACK   0x0000
+  #define	BLUE    0x001F
+  #define	RED     0xF800
+  #define	GREEN   0x07E0
+  #define CYAN    0x07FF
+  #define MAGENTA 0xF81F
+  #define YELLOW  0xFFE0
+  #define WHITE   0xFFFF
+  //Screen coordinates
+  #define ILI9340_TIMER_POS_X 50
+  #define ILI9340_TIMER_POS_Y 60
+  #define ILI9340_TIMER_WIDTH 180
+  #define ILI9340_TIMER_HEIGTH 60
+  #define ILI9340_TIMER_Y_OFFSET 5
+#endif  // #ifdef ILI9340_ENABLED
 
 #ifdef SSD1306_ENABLED
   //Set up OLED display
@@ -60,6 +84,11 @@
   //Adafruit_SSD1306 oled_ssd1306_display(OLED_WIDTH, OLED_HEIGHT, &Wire);
   //SSD1306AsciiAvrI2c oled_ssd1306_display; /* Use only when no other I2C devices are used! */
 #endif // #ifdef SSD1306_ENABLED
+
+#ifdef ILI9340_ENABLED
+  //	MCUFRIEND_kbv(int CS=A3, int RS=A2, int WR=A1, int RD=A0, int RST=A4); //shield wiring
+  MCUFRIEND_kbv tft_ili9340;
+#endif // #ifdef ILI9340_ENABLED
 
 #define SW_ON_LEVEL LOW  /* Switch on level */
 #define SW_OFF_LEVEL HIGH  /* Switch off level */
@@ -683,3 +712,62 @@ void display_Temperature_On_Ssd1306() {
   oled_ssd1306_display.print(F(" *C"));
 }
 #endif
+
+#ifdef ILI9340_ENABLED
+void ILI9340_Init(void) {
+  uint16_t ID = tft_ili9340.readID(); //
+  #ifdef SERIAL_DEBUG_ENABLED
+  Serial.print("TFT ID = 0x");
+  Serial.println(ID, HEX);
+  #endif
+  if (ID == 0xD3D3) ID = 0x9481; // write-only shield
+  tft_ili9340.begin(ID);
+  tft_ili9340.setRotation(3);
+  Display_Clear_ILI9340(BLACK);
+  tft_ili9340.setCursor(0, 40);
+  uint16_t wid = tft_ili9340.width();
+  tft_ili9340.setTextColor(WHITE);  
+  tft_ili9340.setFont(&FreeSans12pt7b);
+  tft_ili9340.setTextSize(2);
+  tft_ili9340.println("Linea Mini ");
+  tft_ili9340.println("Brew Timer ");
+  tft_ili9340.println("Version 1.0");
+  delay(1500);
+}
+
+/**
+* @brief Updates and then displays the TimeCounterStr string on the ILI9340 TFT screen, format: MM:SS
+* @param need_Display_Clear : is display clear needed?
+* @param need_Display_Stopped : is visualisation of sopped timer needed?
+*/
+void display_Timer_On_ILI9340(boolean need_Display_Clear,boolean need_Display_Stopped) {
+  if(need_Display_Clear) {
+    Display_Clear_ILI9340(WHITE);
+  }
+  tft_ili9340.setFont(&FreeSans12pt7b);
+  tft_ili9340.setTextSize(3);
+  if(need_Display_Stopped) {
+    tft_ili9340.setTextColor(CYAN);
+  }
+  else {
+    tft_ili9340.setTextColor(BLUE);
+  }  
+  tft_ili9340.fillRect(ILI9340_TIMER_POS_X, ILI9340_TIMER_Y_OFFSET, ILI9340_TIMER_WIDTH, ILI9340_TIMER_HEIGTH + ILI9340_TIMER_Y_OFFSET, WHITE);
+  tft_ili9340.setCursor(ILI9340_TIMER_POS_X, ILI9340_TIMER_POS_Y);
+  tft_ili9340.println(TimeCounterStr);
+}
+
+void display_Temperature_On_ILI9340() {
+  //oled_ssd1306_display.setCol(0);
+  //oled_ssd1306_display.setRow(2);
+  //oled_ssd1306_display.print(temperature_String_V2);
+  //oled_ssd1306_display.print(F(" *C"));
+}
+
+void Display_Clear_ILI9340(uint16_t color) {
+  //Serial.println("Display_Clear_ILI9340");
+  tft_ili9340.fillScreen(color);
+  tft_ili9340.setCursor(0, 0);
+  delay(50);
+}
+#endif // #ifdef ILI9340_ENABLED
