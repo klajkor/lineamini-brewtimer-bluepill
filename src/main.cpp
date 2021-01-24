@@ -17,6 +17,18 @@
 *  - Adafruit INA219 by Adafruit - Copyright (c) 2012, Adafruit Industries
 *  - MCUFRIEND_kbv - Copyright (c) 2020, David Prentice
 *
+* Wiring of reed switch:
+*  - PB3
+*  - GND
+*
+* Wiring of I2C devices (INA219, SSD1306):
+*  - SDA - PB11 (I2C2 used due to pins required for ILI9340 TFT)
+*  - SCL - PB10 (I2C2 used due to pins required for ILI9340 TFT)
+*
+* Wiring of ILI9340:
+* - LCD pins  |D7 |D6 |D5 |D4 |D3 |D2 |D1 |D0 | |RD |WR |RS |CS |RST| Not in use: |SD_SS|SD_DI|SD_DO|SD_SCK|
+* - STM32 pin |PA7|PA6|PA5|PA4|PA3|PA2|PA1|PA0| |PB0|PB6|PB7|PB8|PB9| Not in use: |PA15 |PB5  |PB4  |PB3   | **ALT-SPI1**
+*
 * BSD license, all text here must be included in any redistribution.
 *
 */
@@ -28,7 +40,7 @@
 #define SSD1306_ENABLED 1
 
 //uncomment the line below if you would like to use ILI9340 TFT display
-//#define ILI9340_ENABLED 1
+#define ILI9340_ENABLED 1
 
 
 // Adafruit BusIO library also needs to be installed on PlatformIO!
@@ -55,27 +67,27 @@
   #include <MCUFRIEND_kbv.h> // for ILI9340
   #include <mcufriend_special.h>
   #include <Fonts/FreeSans12pt7b.h>
-  //Constants for ILI9340 display
-  #define LCD_CS A3 // Chip Select goes to Analog 3
-  #define LCD_CD A2 // Command/Data goes to Analog 2
-  #define LCD_WR A1 // LCD Write goes to Analog 1
-  #define LCD_RD A0 // LCD Read goes to Analog 0
-  #define LCD_RESET A4 // Can alternately just connect to Arduino's reset pin
   // Assign human-readable names to some common 16-bit color values:
-  #define	BLACK   0x0000
-  #define	BLUE    0x001F
-  #define	RED     0xF800
-  #define	GREEN   0x07E0
-  #define CYAN    0x07FF
-  #define MAGENTA 0xF81F
-  #define YELLOW  0xFFE0
-  #define WHITE   0xFFFF
+  #define	ILI9340_BLACK   0x0000
+  #define	ILI9340_BLUE    0x001F
+  #define	ILI9340_RED     0xF800
+  #define	ILI9340_GREEN   0x07E0
+  #define ILI9340_CYAN    0x07FF
+  #define ILI9340_MAGENTA 0xF81F
+  #define ILI9340_YELLOW  0xFFE0
+  #define ILI9340_WHITE   0xFFFF
+  #define ILI9340_DISPLAY_CLEAR_COLOR ILI9340_BLACK
   //Screen coordinates
   #define ILI9340_TIMER_POS_X 50
-  #define ILI9340_TIMER_POS_Y 60
-  #define ILI9340_TIMER_WIDTH 180
-  #define ILI9340_TIMER_HEIGTH 60
+  #define ILI9340_TIMER_POS_Y 80
+  #define ILI9340_TIMER_WIDTH 240
+  #define ILI9340_TIMER_HEIGTH 80
   #define ILI9340_TIMER_Y_OFFSET 5
+  #define ILI9340_TEMPERATURE_POS_X 20
+  #define ILI9340_TEMPERATURE_POS_Y 180
+  #define ILI9340_TEMPERATURE_WIDTH 200
+  #define ILI9340_TEMPERATURE_HEIGTH 60
+  #define ILI9340_TEMPERATURE_Y_OFFSET 3
 #endif  // #ifdef ILI9340_ENABLED
 
 #ifdef SSD1306_ENABLED
@@ -92,6 +104,9 @@
 
 #define SW_ON_LEVEL LOW  /* Switch on level */
 #define SW_OFF_LEVEL HIGH  /* Switch off level */
+
+#define LED_ON LOW    /* LED Switch on level */
+#define LED_OFF HIGH  /* LED Switch off level */
 
 #define COUNTER_STATE_RESET 0
 #define COUNTER_STATE_DISABLED 1
@@ -158,7 +173,7 @@ int DEBUG = 1;  //Set to 1 to enable serial monitor debugging info
 //Switch Variables - "sw1"
 int state_Manual_Switch = 0;                   //The actual ~state~ of the state machine
 int state_prev_Manual_Switch = 0;              //Remembers the previous state (useful to know when the state has changed)
-int pin_Manual_Switch = 10;                    //Input/Output (IO) pin for the switch, 10 = pin 10 a.k.a. D10
+int pin_Manual_Switch = PB4;                    //Input/Output (IO) pin for the switch, 10 = pin 10 a.k.a. D10
 int value_Manual_Switch = 0;                     //Value of the switch ("HIGH" or "LOW")
 unsigned long t_Manual_Switch = 0;             //Typically represents the current time of the switch
 unsigned long t_0_Manual_Switch = 0;           //The time that we last passed through an interesting state
@@ -167,7 +182,7 @@ unsigned long bounce_delay_Manual_Switch = 20; //The delay to list for bouncing
 //Switch Variables - "Reed_Switch"
 int state_Reed_Switch = 0;                   //The actual ~state~ of the state machine
 //int pin_Reed_Switch = 3;                   //Input/Output (IO) pin for the switch <- old config!
-int pin_Reed_Switch = PB9;                    //Input/Output (IO) pin for the switch, 10 = pin 10 a.k.a. D10
+int pin_Reed_Switch = PB3;                    //Input/Output (IO) pin for the switch, 10 = pin 10 a.k.a. D10
 int value_Reed_Switch = 0;                   //Value of the switch ("HIGH" or "LOW")
 unsigned long t_Reed_Switch = 0;             //Typically represents the current time of the switch
 unsigned long t_0_Reed_Switch = 0;           //The time that we last passed through an interesting state
@@ -243,12 +258,15 @@ void StateMachine_Display(void);
 void update_TimeCounterStr(int tMinutes, int tSeconds);
 
 void Gpio_Init(void);
+void Status_Led_Off(void);
+void Status_Led_On(void);
 void Ssd1306_Oled_Init(void);
 void ILI9340_Init(void);
-void display_Timer_On_All(boolean need_Display_Clear,boolean need_Display_Stopped);
-void display_Timer_On_Ssd1306(boolean need_Display_Clear,boolean need_Display_Stopped);
-void display_Timer_On_ILI9340(boolean need_Display_Clear,boolean need_Display_Stopped);
+void display_Timer_On_All(bool need_Display_Clear,bool need_Display_Stopped);
+void display_Timer_On_Ssd1306(bool need_Display_Clear,bool need_Display_Stopped);
+void display_Timer_On_ILI9340(bool need_Display_Clear,bool need_Display_Stopped);
 void display_Temperature_On_Ssd1306(void);
+void display_Temperature_On_ILI9340(void);
 
 void ina219_Init(void);
 void get_Voltage(void);
@@ -296,13 +314,13 @@ void loop() {
   //Provide events that can force the state machines to change state
   switch (virtual_Reed_Switch) {
     case VIRT_REED_SWITCH_OFF:
-      digitalWrite(pin_Status_Led, LOW);
+      Status_Led_Off();
       if (state_counter1 == COUNTER_STATE_COUNTING) {
         state_counter1 = COUNTER_STATE_STOP;
       }
       break;
     case VIRT_REED_SWITCH_ON:
-      digitalWrite(pin_Status_Led, HIGH);
+      Status_Led_On();
       if (state_counter1 == COUNTER_STATE_DISABLED) {
         state_counter1 = COUNTER_STATE_START;
       }
@@ -465,7 +483,7 @@ void StateMachine_Status_Led(void) {
       break;
 
     case 2: //TURNING ON
-      digitalWrite(pin_Status_Led, HIGH);
+      Status_Led_On();
       // debug display
       #ifdef SERIAL_DEBUG_ENABLED
       Serial.println(F(":: LED ON"));
@@ -484,7 +502,7 @@ void StateMachine_Status_Led(void) {
       //Increment the beep counter, proceed to OFF
       beep_count_Status_Led++;
       t_0_Status_Led = millis();
-      digitalWrite(pin_Status_Led, LOW);
+      Status_Led_Off();
       // debug display
       #ifdef SERIAL_DEBUG_ENABLED
       Serial.println(F(":: LED off"));
@@ -517,12 +535,16 @@ void update_TimeCounterStr(int tMinutes, int tSeconds) {
 }
 
 void Gpio_Init(void) {
+  Wire.setSDA(PB11); // SDA2 pin
+  Wire.setSCL(PB10); // SCL2 pin
+  Wire.begin();
   pinMode(pin_Manual_Switch, INPUT_PULLUP); //INPUT => reverse logic!
   pinMode(pin_Reed_Switch, INPUT_PULLUP); //INPUT => reverse logic!
   pinMode(pin_Status_Led, OUTPUT);
+  Status_Led_Off();  
 }
 
-void display_Timer_On_All(boolean need_Display_Clear,boolean need_Display_Stopped) {
+void display_Timer_On_All(bool need_Display_Clear,bool need_Display_Stopped) {
   update_TimeCounterStr(iMinCounter1,iSecCounter1);
   #ifdef SSD1306_ENABLED
   display_Timer_On_Ssd1306(need_Display_Clear,need_Display_Stopped);
@@ -535,10 +557,8 @@ void display_Timer_On_All(boolean need_Display_Clear,boolean need_Display_Stoppe
 
 void ina219_Init(void)
 {
-  //pinMode(INA219_GND_PIN, OUTPUT);
-  //pinMode(INA219_VCC_PIN, OUTPUT);
-  //digitalWrite(INA219_GND_PIN, LOW);
-  //digitalWrite(INA219_VCC_PIN, HIGH);
+  Wire.setSDA(PB11); // SDA2 pin
+  Wire.setSCL(PB10); // SCL2 pin  
   delay(100);
   ina219_monitor.begin();
 }
@@ -656,7 +676,10 @@ void Display_Stopped_Timer(void) {
 void Display_Temperature(void) {
   #ifdef SSD1306_ENABLED
   display_Temperature_On_Ssd1306();
-  #endif  
+  #endif
+  #ifdef ILI9340_ENABLED
+  display_Temperature_On_ILI9340();
+  #endif
 }
 
 void Display_Clear(void) {
@@ -664,13 +687,15 @@ void Display_Clear(void) {
   oled_ssd1306_display.clear();
   #endif
   #ifdef ILI9340_ENABLED
-  Display_Clear_ILI9340(WHITE);
+  Display_Clear_ILI9340(ILI9340_DISPLAY_CLEAR_COLOR);
   #endif
 }
 
 
 #ifdef SSD1306_ENABLED
 void Ssd1306_Oled_Init(void) {
+  Wire.setSDA(PB11); // SDA2 pin
+  Wire.setSCL(PB10); // SCL2 pin  
   oled_ssd1306_display.begin(&Adafruit128x32, OLED_I2C_ADDR);
   oled_ssd1306_display.clear();
   oled_ssd1306_display.setFont(fixed_bold10x15);
@@ -690,7 +715,7 @@ void Ssd1306_Oled_Init(void) {
 * @param need_Display_Clear : is display clear needed?
 * @param need_Display_Stopped : is visualisation of sopped timer needed?
 */
-void display_Timer_On_Ssd1306(boolean need_Display_Clear,boolean need_Display_Stopped) {
+void display_Timer_On_Ssd1306(bool need_Display_Clear,bool need_Display_Stopped) {
   if(need_Display_Clear) {
     oled_ssd1306_display.clear();
   }
@@ -723,16 +748,16 @@ void ILI9340_Init(void) {
   if (ID == 0xD3D3) ID = 0x9481; // write-only shield
   tft_ili9340.begin(ID);
   tft_ili9340.setRotation(3);
-  Display_Clear_ILI9340(BLACK);
+  Display_Clear_ILI9340(ILI9340_DISPLAY_CLEAR_COLOR);
   tft_ili9340.setCursor(0, 40);
-  uint16_t wid = tft_ili9340.width();
-  tft_ili9340.setTextColor(WHITE);  
+  //uint16_t wid = tft_ili9340.width();
+  tft_ili9340.setTextColor(ILI9340_WHITE);  
   tft_ili9340.setFont(&FreeSans12pt7b);
   tft_ili9340.setTextSize(2);
   tft_ili9340.println("Linea Mini ");
   tft_ili9340.println("Brew Timer ");
   tft_ili9340.println("Version 1.0");
-  delay(1500);
+  delay(1500);  
 }
 
 /**
@@ -740,28 +765,30 @@ void ILI9340_Init(void) {
 * @param need_Display_Clear : is display clear needed?
 * @param need_Display_Stopped : is visualisation of sopped timer needed?
 */
-void display_Timer_On_ILI9340(boolean need_Display_Clear,boolean need_Display_Stopped) {
+void display_Timer_On_ILI9340(bool need_Display_Clear,bool need_Display_Stopped) {
   if(need_Display_Clear) {
-    Display_Clear_ILI9340(WHITE);
+    Display_Clear_ILI9340(ILI9340_DISPLAY_CLEAR_COLOR);
   }
   tft_ili9340.setFont(&FreeSans12pt7b);
-  tft_ili9340.setTextSize(3);
+  tft_ili9340.setTextSize(4);
   if(need_Display_Stopped) {
-    tft_ili9340.setTextColor(CYAN);
+    tft_ili9340.setTextColor(ILI9340_CYAN);
   }
   else {
-    tft_ili9340.setTextColor(BLUE);
+    tft_ili9340.setTextColor(ILI9340_BLUE);
   }  
-  tft_ili9340.fillRect(ILI9340_TIMER_POS_X, ILI9340_TIMER_Y_OFFSET, ILI9340_TIMER_WIDTH, ILI9340_TIMER_HEIGTH + ILI9340_TIMER_Y_OFFSET, WHITE);
+  tft_ili9340.fillRect(ILI9340_TIMER_POS_X, ILI9340_TIMER_POS_Y-ILI9340_TIMER_HEIGTH, ILI9340_TIMER_WIDTH, ILI9340_TIMER_HEIGTH + ILI9340_TIMER_Y_OFFSET, ILI9340_DISPLAY_CLEAR_COLOR);
   tft_ili9340.setCursor(ILI9340_TIMER_POS_X, ILI9340_TIMER_POS_Y);
   tft_ili9340.println(TimeCounterStr);
 }
 
-void display_Temperature_On_ILI9340() {
-  //oled_ssd1306_display.setCol(0);
-  //oled_ssd1306_display.setRow(2);
-  //oled_ssd1306_display.print(temperature_String_V2);
-  //oled_ssd1306_display.print(F(" *C"));
+void display_Temperature_On_ILI9340(void) {
+  tft_ili9340.setTextSize(3);
+  tft_ili9340.fillRect(ILI9340_TEMPERATURE_POS_X, ILI9340_TEMPERATURE_POS_Y-ILI9340_TEMPERATURE_HEIGTH, ILI9340_TEMPERATURE_WIDTH, ILI9340_TEMPERATURE_HEIGTH+ILI9340_TEMPERATURE_Y_OFFSET, ILI9340_DISPLAY_CLEAR_COLOR);
+  tft_ili9340.setTextColor(ILI9340_RED);
+  tft_ili9340.setCursor(ILI9340_TEMPERATURE_POS_X, ILI9340_TEMPERATURE_POS_Y);
+  tft_ili9340.print(temperature_String_V2);
+  tft_ili9340.print(F(" *C"));  
 }
 
 void Display_Clear_ILI9340(uint16_t color) {
@@ -771,3 +798,11 @@ void Display_Clear_ILI9340(uint16_t color) {
   delay(50);
 }
 #endif // #ifdef ILI9340_ENABLED
+
+void Status_Led_Off(void) {
+  digitalWrite(pin_Status_Led, LED_OFF);
+}
+
+void Status_Led_On(void) {
+  digitalWrite(pin_Status_Led, LED_ON);
+}
