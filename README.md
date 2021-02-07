@@ -1,4 +1,4 @@
-# Arduino Brew Timer for LaMarzocco Linea Mini espresso machine
+# Arduino Brew Timer and Temperature Display for LaMarzocco Linea Mini espresso machine
 
 ## Board
 - STM32 BluePill (generic STM32F103C8) with Arduino Framework
