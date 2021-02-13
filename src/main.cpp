@@ -70,14 +70,18 @@
   #include <Fonts/FreeSans18pt7b.h>
   #include <Fonts/FreeSans24pt7b.h>
   // Assign human-readable names to some common 16-bit color values:
-  #define	ILI9340_BLACK   0x0000
-  #define	ILI9340_BLUE    0x001F
-  #define	ILI9340_RED     0xF800
-  #define	ILI9340_GREEN   0x07E0
-  #define ILI9340_CYAN    0x07FF
-  #define ILI9340_MAGENTA 0xF81F
-  #define ILI9340_YELLOW  0xFFE0
-  #define ILI9340_WHITE   0xFFFF
+  #define	ILI9340_BLACK      0x0000
+  #define	ILI9340_NAVY       0x000F
+  #define	ILI9340_BLUE       0x001F
+  #define	ILI9340_RED        0xF800
+  #define	ILI9340_GREEN      0x07E0
+  #define ILI9340_CYAN       0x07FF
+  #define ILI9340_MAGENTA    0xF81F
+  #define ILI9340_ORANGE     0xFDA0
+  #define ILI9340_YELLOW     0xFFE0
+  #define ILI9340_LIGHT_GRAY 0xBDF7
+  #define ILI9340_DARK_GRAY  0x7BEF
+  #define ILI9340_WHITE      0xFFFF
   #define ILI9340_DISPLAY_CLEAR_COLOR ILI9340_BLACK
   //Screen coordinates
   #define ILI9340_TIMER_POS_X 45
@@ -199,7 +203,7 @@ int virtual_Reed_Switch = VIRT_REED_SWITCH_OFF; // virtual switch
 int state_Volt_Meter = 0;
 unsigned long t_Volt_Meter = 0;
 unsigned long t_0_Volt_Meter = 0;
-unsigned long delay_Between_2_Measures = 500;
+unsigned long delay_Between_2_Measures = 1000;
 
 //SM Display variables
 int state_Display = 0;
@@ -749,14 +753,22 @@ void display_Temperature_On_Ssd1306() {
 
 #ifdef ILI9340_ENABLED
 void ILI9340_Init(void) {
+  tft_ili9340.reset();
+  uint16_t identifier;
   uint16_t ID = tft_ili9340.readID(); //
+  identifier = ID;
   #ifdef SERIAL_DEBUG_ENABLED
   Serial.print("TFT ID = 0x");
   Serial.println(ID, HEX);
   #endif
-  if (ID == 0xD3D3) ID = 0x9481; // write-only shield
+  if (ID == 0xE300) ID = 0x9340; // "Weird" Banggood shield, forcing ILI9340 setup
   tft_ili9340.begin(ID);
-  tft_ili9340.setRotation(3);
+  tft_ili9340.setRotation(1);
+  // Display_Clear_ILI9340(ILI9340_DISPLAY_CLEAR_COLOR);
+  // tft_ili9340.setCursor(0, 0);
+  // tft_ili9340.print("ID = 0x");
+  // tft_ili9340.println(identifier, HEX);
+  // delay(5000);
   Display_Clear_ILI9340(ILI9340_DISPLAY_CLEAR_COLOR);
   tft_ili9340.setCursor(0, 40);
   //uint16_t wid = tft_ili9340.width();
@@ -781,10 +793,10 @@ void display_Timer_On_ILI9340(bool need_Display_Clear,bool need_Display_Stopped)
   tft_ili9340.setFont(&FreeSans24pt7b);
   tft_ili9340.setTextSize(2);
   if(need_Display_Stopped) {
-    tft_ili9340.setTextColor(ILI9340_CYAN);
+    tft_ili9340.setTextColor(ILI9340_DARK_GRAY);
   }
   else {
-    tft_ili9340.setTextColor(ILI9340_BLUE);
+    tft_ili9340.setTextColor(ILI9340_WHITE);
   }  
   tft_ili9340.fillRect(ILI9340_TIMER_POS_X, ILI9340_TIMER_POS_Y-ILI9340_TIMER_HEIGTH, ILI9340_TIMER_WIDTH, ILI9340_TIMER_HEIGTH + ILI9340_TIMER_Y_OFFSET, ILI9340_DISPLAY_CLEAR_COLOR);
   tft_ili9340.setCursor(ILI9340_TIMER_POS_X, ILI9340_TIMER_POS_Y);
@@ -792,10 +804,10 @@ void display_Timer_On_ILI9340(bool need_Display_Clear,bool need_Display_Stopped)
 }
 
 void display_Temperature_On_ILI9340(void) {
+  tft_ili9340.fillRect(ILI9340_TEMPERATURE_POS_X, ILI9340_TEMPERATURE_POS_Y-ILI9340_TEMPERATURE_HEIGTH, ILI9340_TEMPERATURE_WIDTH, ILI9340_TEMPERATURE_HEIGTH+ILI9340_TEMPERATURE_Y_OFFSET, ILI9340_DISPLAY_CLEAR_COLOR);
   tft_ili9340.setFont(&FreeSans18pt7b);
   tft_ili9340.setTextSize(2);
-  tft_ili9340.fillRect(ILI9340_TEMPERATURE_POS_X, ILI9340_TEMPERATURE_POS_Y-ILI9340_TEMPERATURE_HEIGTH, ILI9340_TEMPERATURE_WIDTH, ILI9340_TEMPERATURE_HEIGTH+ILI9340_TEMPERATURE_Y_OFFSET, ILI9340_DISPLAY_CLEAR_COLOR);
-  tft_ili9340.setTextColor(ILI9340_RED);
+  tft_ili9340.setTextColor(ILI9340_ORANGE);
   tft_ili9340.setCursor(ILI9340_TEMPERATURE_POS_X, ILI9340_TEMPERATURE_POS_Y);
   tft_ili9340.print(temperature_String_V2);
   tft_ili9340.print(F(" *C"));  
