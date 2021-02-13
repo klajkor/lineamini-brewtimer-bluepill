@@ -90,7 +90,7 @@
   #define ILI9340_TEMPERATURE_WIDTH 310
   #define ILI9340_TEMPERATURE_HEIGTH 60
   #define ILI9340_TEMPERATURE_Y_OFFSET 3
-  #define ILI9340_MILLI_VOLT_POS_X 55
+  #define ILI9340_MILLI_VOLT_POS_X 45
   #define ILI9340_MILLI_VOLT_POS_Y 215
   #define ILI9340_MILLI_VOLT_WIDTH 250
   #define ILI9340_MILLI_VOLT_HEIGTH 20
@@ -763,9 +763,9 @@ void ILI9340_Init(void) {
   tft_ili9340.setTextColor(ILI9340_WHITE);  
   tft_ili9340.setFont(&FreeSans24pt7b);
   tft_ili9340.setTextSize(1);
-  tft_ili9340.println("Linea Mini ");
-  tft_ili9340.println("Brew Timer ");
-  tft_ili9340.println("Version 1.0");
+  tft_ili9340.println("  Linea Mini ");
+  tft_ili9340.println("  Brew Timer ");
+  tft_ili9340.println("  Version 1.0");
   delay(1500);  
 }
 
@@ -807,7 +807,7 @@ void display_Milli_Volt_On_ILI9340(void) {
   tft_ili9340.fillRect(ILI9340_MILLI_VOLT_POS_X, ILI9340_MILLI_VOLT_POS_Y-ILI9340_MILLI_VOLT_HEIGTH, ILI9340_MILLI_VOLT_WIDTH, ILI9340_MILLI_VOLT_HEIGTH+ILI9340_MILLI_VOLT_Y_OFFSET, ILI9340_DISPLAY_CLEAR_COLOR);
   tft_ili9340.setTextColor(ILI9340_MAGENTA);
   tft_ili9340.setCursor(ILI9340_MILLI_VOLT_POS_X, ILI9340_MILLI_VOLT_POS_Y);
-  tft_ili9340.print(F("Voltage: "));
+  tft_ili9340.print(F("Th Voltage: "));
   tft_ili9340.print(volt_String);
   tft_ili9340.print(F(" mV"));
 }
