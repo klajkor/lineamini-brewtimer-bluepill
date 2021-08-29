@@ -34,30 +34,10 @@
  *
  */
 
-// uncomment the line below if you would like to have debug messages
-//#define SERIAL_DEBUG_ENABLED 1
-
-// uncomment the line below if you would like to use SSD1306 OLED display
-#define SSD1306_ENABLED 1
-
-// uncomment the line below if you would like to use ILI9340 TFT display
-#define ILI9340_ENABLED 1
-
-// Adafruit BusIO library also needs to be installed on PlatformIO!
-
 #include "main.h"
+#include "display.h"
 #include "temperature_meter.h"
 #include <Arduino.h>
-
-//#include <Adafruit_GFX.h>
-
-#ifdef SSD1306_ENABLED
-#include "display_ssd1306.h"
-#endif // #ifdef SSD1306_ENABLED
-
-#ifdef ILI9340_ENABLED
-#include "display_ili9340.h"
-#endif
 
 #define SW_ON_LEVEL LOW   /* Switch on level */
 #define SW_OFF_LEVEL HIGH /* Switch off level */
@@ -71,11 +51,6 @@
 #define COUNTER_STATE_COUNTING 3
 #define COUNTER_STATE_STOP 4
 
-#define DISPLAY_CLEAR_TRUE true
-#define DISPLAY_CLEAR_FALSE false
-#define DISPLAY_STOPPED_TRUE true
-#define DISPLAY_STOPPED_FALSE false
-
 #define VIRT_REED_SWITCH_OFF 0
 #define VIRT_REED_SWITCH_ON 1
 
@@ -85,16 +60,6 @@
 #define REED_SWITCH_STATE_READ_PIN 3
 #define REED_SWITCH_STATE_ROTATE_BIN_COUNTER 4
 #define REED_SWITCH_STATE_SET_LOGIC_SWITCH 5
-
-#define DISPLAY_STATE_RESET 0
-#define DISPLAY_STATE_TIMER_RUNNING 1
-#define DISPLAY_STATE_TIMER_STOPPED 2
-#define DISPLAY_STATE_HOLD_TIMER_ON 3
-#define DISPLAY_STATE_TEMPERATURE 4
-#define DISPLAY_STATE_DO_NOTHING 5
-
-// Thermistor calculation values
-// Original idea and code from Jimmy Roasts, https://github.com/JimmyRoasts/LaMarzoccoTempSensor
 
 // Top Level Variables:
 int DEBUG = 1; // Set to 1 to enable serial monitor debugging info
@@ -118,12 +83,6 @@ unsigned long t_0_Reed_Switch = 0;          // The time that we last passed thro
 unsigned long bounce_delay_Reed_Switch = 5; // The delay to filter bouncing
 unsigned int  bin_counter = 0;              // binary counter for reed switch
 int           virtual_Reed_Switch = VIRT_REED_SWITCH_OFF; // virtual switch
-
-// State Machine Display variables
-int           state_Display = 0;
-unsigned long t_Display = 0;
-unsigned long t_0_Display = 0;
-unsigned long delay_For_Stopped_Timer = 5000; // millisec
 
 // State Machine Counter variables
 int           state_counter1 = 0;      // The actual ~state~ of the state machine
@@ -149,26 +108,6 @@ int           beep_number_Status_Led = 2;
 
 char TimeCounterStr[] = "00:00"; /** String to store time counter value, format: MM:SS */
 char SecondsCounterStr[] = "00"; /** String to store time counter value, format: SS */
-
-/* Function declarations */
-
-void StateMachine_counter1(void);
-void StateMachine_Manual_Switch(void);
-void StateMachine_Reed_Switch(void);
-void StateMachine_Status_Led(void);
-void StateMachine_Display(void);
-
-void update_TimeCounterStr(int tMinutes, int tSeconds);
-
-void Gpio_Init(void);
-void Status_Led_Off(void);
-void Status_Led_On(void);
-void display_Timer_On_All(bool need_Display_Clear, bool need_Display_Stopped);
-
-void Display_Running_Timer(void);
-void Display_Stopped_Timer(void);
-void Display_Temperature(void);
-void Display_Clear(void);
 
 /* Functions */
 
@@ -451,87 +390,6 @@ void Gpio_Init(void)
     Status_Led_Off();
 }
 
-void display_Timer_On_All(bool need_Display_Clear, bool need_Display_Stopped)
-{
-    update_TimeCounterStr(iMinCounter1, iSecCounter1);
-#ifdef SSD1306_ENABLED
-    display_Timer_On_Ssd1306(SecondsCounterStr, need_Display_Clear, need_Display_Stopped);
-#endif
-#ifdef ILI9340_ENABLED
-    display_Timer_On_ILI9340(SecondsCounterStr, need_Display_Clear, need_Display_Stopped);
-#endif
-}
-
-void StateMachine_Display(void)
-{
-
-    switch (state_Display)
-    {
-    case DISPLAY_STATE_RESET:
-        Display_Stopped_Timer();
-        state_Display = DISPLAY_STATE_TEMPERATURE;
-        break;
-
-    case DISPLAY_STATE_TIMER_RUNNING:
-        Display_Running_Timer();
-        // Display_Temperature();
-        state_Display = DISPLAY_STATE_TEMPERATURE;
-        break;
-
-    case DISPLAY_STATE_TIMER_STOPPED:
-        Display_Stopped_Timer();
-        t_0_Display = millis();
-        state_Display = DISPLAY_STATE_TEMPERATURE;
-        break;
-
-    case DISPLAY_STATE_HOLD_TIMER_ON:
-        t_Display = millis();
-        if (t_Display - t_0_Display > delay_For_Stopped_Timer)
-        {
-            state_Display = DISPLAY_STATE_TEMPERATURE;
-        }
-        break;
-
-    case DISPLAY_STATE_TEMPERATURE:
-        Display_Temperature();
-        state_Display = DISPLAY_STATE_DO_NOTHING;
-        break;
-
-    case DISPLAY_STATE_DO_NOTHING:
-        break;
-    }
-}
-
-void Display_Running_Timer(void)
-{
-    display_Timer_On_All(DISPLAY_CLEAR_FALSE, DISPLAY_STOPPED_FALSE);
-}
-
-void Display_Stopped_Timer(void)
-{
-    display_Timer_On_All(DISPLAY_CLEAR_FALSE, DISPLAY_STOPPED_TRUE);
-}
-
-void Display_Temperature(void)
-{
-#ifdef SSD1306_ENABLED
-    display_Temperature_On_Ssd1306(temperature_str_V2);
-#endif
-#ifdef ILI9340_ENABLED
-    display_Temperature_On_ILI9340(temperature_str_V2);
-    display_Milli_Volt_On_ILI9340(milli_volt_str);
-#endif
-}
-
-void Display_Clear(void)
-{
-#ifdef SSD1306_ENABLED
-    oled_ssd1306_display.clear();
-#endif
-#ifdef ILI9340_ENABLED
-    Display_Clear_ILI9340(ILI9340_DISPLAY_CLEAR_COLOR);
-#endif
-}
 
 void Status_Led_Off(void)
 {

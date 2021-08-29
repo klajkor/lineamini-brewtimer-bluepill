@@ -12,6 +12,9 @@ static unsigned long t_Volt_Meter = 0;
 static unsigned long t_0_Volt_Meter = 0;
 static unsigned long delay_Between_2_Measures = 500;
 
+// Thermistor calculation values
+// Original idea and code from Jimmy Roasts, https://github.com/JimmyRoasts/LaMarzoccoTempSensor
+
 // Calculated temperature
 // static float calc_Temperature_V1 = 0.0;
 // static char  temperature_String_V1[] = "  999.9";
