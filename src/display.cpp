@@ -64,7 +64,14 @@ void StateMachine_Display(void)
 
     case DISPLAY_STATE_TEMPERATURE:
         Display_Temperature();
-        state_Display = DISPLAY_STATE_HOLD_TIMER_ON;
+        if (virtual_Reed_Switch == VIRT_REED_SWITCH_OFF)
+        {
+            state_Display = DISPLAY_STATE_HOLD_TIMER_ON;
+        }
+        else
+        {
+            state_Display = DISPLAY_STATE_DO_NOTHING;
+        }
         break;
 
     case DISPLAY_STATE_DO_NOTHING:

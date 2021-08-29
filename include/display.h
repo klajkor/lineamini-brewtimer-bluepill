@@ -25,7 +25,7 @@
 #define DISPLAY_STATE_TEMPERATURE 4
 #define DISPLAY_STATE_DO_NOTHING 5
 
-#define DISPLAY_TEMPERATURE_FREQ_MILLISEC (500U)
+#define DISPLAY_TEMPERATURE_FREQ_MILLISEC (1000U)
 
 // State Machine Display variables
 extern int state_Display;

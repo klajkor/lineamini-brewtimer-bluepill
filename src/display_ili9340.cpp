@@ -4,9 +4,9 @@ MCUFRIEND_kbv tft_ili9340;
 
 void ILI9340_Init(void)
 {
-    tft_ili9340.reset();
     uint16_t ID;
 
+    tft_ili9340.reset();
     ID = tft_ili9340.readID();
 #ifdef SERIAL_DEBUG_ENABLED
     Serial.print(F("TFT original ID = 0x"));
@@ -19,8 +19,9 @@ void ILI9340_Init(void)
     tft_ili9340.begin(ID);
     tft_ili9340.setRotation(1);
     Display_Clear_ILI9340(ILI9340_DISPLAY_CLEAR_COLOR);
-    tft_ili9340.setCursor(0, 40);
+    tft_ili9340.setCursor(0, 0);
     tft_ili9340.setTextColor(ILI9340_WHITE);
+    tft_ili9340.setCursor(0, 40);
     tft_ili9340.setFont(&FreeSans24pt7b);
     tft_ili9340.setTextSize(1);
     tft_ili9340.println(F("  Linea Mini "));
@@ -40,6 +41,11 @@ void display_Timer_On_ILI9340(char *pCounterStr, bool need_Display_Clear, bool n
     {
         Display_Clear_ILI9340(ILI9340_DISPLAY_CLEAR_COLOR);
     }
+    else
+    {
+        tft_ili9340.fillRect(ILI9340_TIMER_POS_X, ILI9340_TIMER_POS_Y - ILI9340_TIMER_HEIGTH, ILI9340_TIMER_WIDTH,
+                             ILI9340_TIMER_HEIGTH + ILI9340_TIMER_Y_OFFSET, ILI9340_DISPLAY_CLEAR_COLOR);
+    }
     tft_ili9340.setFont(&FreeSans24pt7b);
     tft_ili9340.setTextSize(2);
     if (need_Display_Stopped)
@@ -50,32 +56,30 @@ void display_Timer_On_ILI9340(char *pCounterStr, bool need_Display_Clear, bool n
     {
         tft_ili9340.setTextColor(ILI9340_WHITE);
     }
-    tft_ili9340.fillRect(ILI9340_TIMER_POS_X, ILI9340_TIMER_POS_Y - ILI9340_TIMER_HEIGTH, ILI9340_TIMER_WIDTH,
-                         ILI9340_TIMER_HEIGTH + ILI9340_TIMER_Y_OFFSET, ILI9340_DISPLAY_CLEAR_COLOR);
     tft_ili9340.setCursor(ILI9340_TIMER_POS_X, ILI9340_TIMER_POS_Y);
     tft_ili9340.println(pCounterStr);
 }
 
 void display_Temperature_On_ILI9340(char *pTemperatureStr)
 {
-    tft_ili9340.fillRect(ILI9340_TEMPERATURE_POS_X, ILI9340_TEMPERATURE_POS_Y - ILI9340_TEMPERATURE_HEIGTH,
-                         ILI9340_TEMPERATURE_WIDTH, ILI9340_TEMPERATURE_HEIGTH + ILI9340_TEMPERATURE_Y_OFFSET,
-                         ILI9340_DISPLAY_CLEAR_COLOR);
     tft_ili9340.setFont(&FreeSans18pt7b);
     tft_ili9340.setTextSize(2);
     tft_ili9340.setTextColor(ILI9340_ORANGE);
     tft_ili9340.setCursor(ILI9340_TEMPERATURE_POS_X, ILI9340_TEMPERATURE_POS_Y);
+    tft_ili9340.fillRect(ILI9340_TEMPERATURE_POS_X, ILI9340_TEMPERATURE_POS_Y - ILI9340_TEMPERATURE_HEIGTH,
+                         ILI9340_TEMPERATURE_WIDTH, ILI9340_TEMPERATURE_HEIGTH + ILI9340_TEMPERATURE_Y_OFFSET,
+                         ILI9340_DISPLAY_CLEAR_COLOR);
     tft_ili9340.print(pTemperatureStr);
     tft_ili9340.print(F(" *C"));
 }
 
 void display_Milli_Volt_On_ILI9340(char *pMilliVoltStr)
 {
-    tft_ili9340.setFont(&FreeSans12pt7b);
-    tft_ili9340.setTextSize(1);
     tft_ili9340.fillRect(ILI9340_MILLI_VOLT_POS_X, ILI9340_MILLI_VOLT_POS_Y - ILI9340_MILLI_VOLT_HEIGTH,
                          ILI9340_MILLI_VOLT_WIDTH, ILI9340_MILLI_VOLT_HEIGTH + ILI9340_MILLI_VOLT_Y_OFFSET,
                          ILI9340_DISPLAY_CLEAR_COLOR);
+    tft_ili9340.setFont(&FreeSans12pt7b);
+    tft_ili9340.setTextSize(1);
     tft_ili9340.setTextColor(ILI9340_MAGENTA);
     tft_ili9340.setCursor(ILI9340_MILLI_VOLT_POS_X, ILI9340_MILLI_VOLT_POS_Y);
     tft_ili9340.print(F("Th Voltage: "));
@@ -88,5 +92,5 @@ void Display_Clear_ILI9340(uint16_t color)
     // Serial.println("Display_Clear_ILI9340");
     tft_ili9340.fillScreen(color);
     tft_ili9340.setCursor(0, 0);
-    delay(50);
+    delay(20);
 }
