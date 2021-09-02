@@ -106,6 +106,6 @@ void Display_Clear(void)
     oled_ssd1306_display.clear();
 #endif
 #ifdef ILI9340_ENABLED
-    Display_Clear_ILI9340(ILI9340_DISPLAY_CLEAR_COLOR);
+    display_clear_ili9340();
 #endif
 }
