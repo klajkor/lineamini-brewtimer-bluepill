@@ -90,6 +90,8 @@ int           iMinCounter1 = -1;
 int           prev_iMinCounter1 = 0;
 unsigned long start_counter1 = 0;
 unsigned long elapsed_counter1 = 0;
+unsigned long autozero_start = 0;
+unsigned int  autozero_delay = 7000; // In millise
 
 // SM Status LED Variables
 int           state_Status_Led = 0;
@@ -175,10 +177,20 @@ void StateMachine_counter1(void)
         iSecCounter1 = 0;
         iMinCounter1 = 0;
         elapsed_counter1 = 0;
+        autozero_start = 0;
         state_counter1 = COUNTER_STATE_DISABLED;
         break;
     case COUNTER_STATE_DISABLED:
-        // waiting for START event
+        if (iSecCounter1 > 0 || iMinCounter1 > 0)
+        {
+            if (millis() - autozero_start > autozero_delay)
+            {
+                iSecCounter1 = 0;
+                iMinCounter1 = 0;
+                state_Display = DISPLAY_STATE_TIMER_STOPPED;
+            }
+        }
+        // waiting for START event from Reed Switch
         break;
     case COUNTER_STATE_START:
         iSecCounter1 = 0;
@@ -206,6 +218,7 @@ void StateMachine_counter1(void)
         }
         break;
     case COUNTER_STATE_STOP:
+        autozero_start = millis();
         state_counter1 = COUNTER_STATE_DISABLED;
         state_Display = DISPLAY_STATE_TIMER_STOPPED;
         break;
@@ -386,7 +399,6 @@ void Gpio_Init(void)
     pinMode(pin_Status_Led, OUTPUT);
     Status_Led_Off();
 }
-
 
 void Status_Led_Off(void)
 {
