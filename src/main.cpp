@@ -116,7 +116,7 @@ void setup()
     Serial.println(F("Debugging is ON"));
 #endif
     Gpio_Init();
-    ina219_Init();
+    ina219_init();
 #ifdef ILI9340_ENABLED
     ILI9340_Init();
 #endif // #ifdef ILI9340_ENABLED
@@ -127,7 +127,7 @@ void setup()
     Display_Clear();
     StateMachine_counter1();
     StateMachine_Reed_Switch();
-    StateMachine_Volt_Meter();
+    state_machine_volt_meter();
     state_Display = DISPLAY_STATE_RESET;
     StateMachine_Display();
 }
@@ -156,7 +156,7 @@ void loop()
         break;
     }
     StateMachine_counter1();
-    StateMachine_Volt_Meter();
+    state_machine_volt_meter();
     StateMachine_Display();
 }
 

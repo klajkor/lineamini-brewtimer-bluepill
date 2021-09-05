@@ -92,11 +92,11 @@ void Display_Stopped_Timer(void)
 void Display_Temperature(void)
 {
 #ifdef SSD1306_ENABLED
-    display_Temperature_On_Ssd1306(temperature_str_V2);
+    display_Temperature_On_Ssd1306(TEMPERATURE_STR_V2);
 #endif
 #ifdef ILI9340_ENABLED
-    display_Temperature_On_ILI9340(temperature_str_V2);
-    display_Milli_Volt_On_ILI9340(milli_volt_str);
+    display_Temperature_On_ILI9340(TEMPERATURE_STR_V2);
+    display_Milli_Volt_On_ILI9340(MILLI_VOLT_STR);
 #endif
 }
 
