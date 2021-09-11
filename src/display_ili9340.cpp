@@ -95,7 +95,7 @@ void ILI9340_Init(void)
         ID = 0x9340; // "Weird" Banggood shield, forcing ILI9340 setup
     }
     tft_ili9340.begin(ID);
-    tft_ili9340.setRotation(0);
+    tft_ili9340.setRotation(2);
     display_clear_ili9340();
     tft_ili9340.setCursor(0, 0);
     tft_ili9340.setTextColor(ILI9340_WHITE);
